@@ -1,29 +1,31 @@
-package com.wiredbarrack.modulith_exploration.inventory;
+package com.wiredbarrack.modulith_exploration.orders.internal;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import com.wiredbarrack.modulith_exploration.inventory.internal.Inventory;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.Reference;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name="orders")
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inventory {
+public class Order {
     @Id
     @GeneratedValue
     private Integer id;
-    private String name;
-    private String category;
-    private Integer count;
+    @Reference(to = Inventory.class)
+    private Integer itemId;
+    private Integer itemCount;
+    private String status;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
     @CreationTimestamp

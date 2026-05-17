@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.notifications;
+package com.wiredbarrack.modulith_exploration.notifications.internal;
 
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;

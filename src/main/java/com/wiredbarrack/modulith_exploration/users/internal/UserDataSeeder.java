@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.users;
+package com.wiredbarrack.modulith_exploration.users.internal;
 
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;

@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.notifications;
+package com.wiredbarrack.modulith_exploration.notifications.internal;
 
 import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.stereotype.Repository;

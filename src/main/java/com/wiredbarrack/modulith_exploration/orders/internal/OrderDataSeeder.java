@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.orders;
+package com.wiredbarrack.modulith_exploration.orders.internal;
 
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;

@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.orders;
+package com.wiredbarrack.modulith_exploration.orders.internal;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.ListCrudRepository;

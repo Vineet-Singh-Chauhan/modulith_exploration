@@ -1,9 +1,11 @@
 package com.wiredbarrack.modulith_exploration.orders;
 
-import com.wiredbarrack.modulith_exploration.inventory.Inventory;
-import com.wiredbarrack.modulith_exploration.inventory.InventoryRepository;
-import com.wiredbarrack.modulith_exploration.notifications.Notification;
+import com.wiredbarrack.modulith_exploration.inventory.internal.Inventory;
+import com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository;
+import com.wiredbarrack.modulith_exploration.notifications.internal.Notification;
 import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
+import com.wiredbarrack.modulith_exploration.orders.internal.Order;
+import com.wiredbarrack.modulith_exploration.orders.internal.OrderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

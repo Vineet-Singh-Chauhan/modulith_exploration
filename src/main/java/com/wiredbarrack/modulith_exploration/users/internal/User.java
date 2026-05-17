@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.users;
+package com.wiredbarrack.modulith_exploration.users.internal;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

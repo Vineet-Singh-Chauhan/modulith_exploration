@@ -1,5 +1,7 @@
 package com.wiredbarrack.modulith_exploration.users;
 
+import com.wiredbarrack.modulith_exploration.users.internal.User;
+import com.wiredbarrack.modulith_exploration.users.internal.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service

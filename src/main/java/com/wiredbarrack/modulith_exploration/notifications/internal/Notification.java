@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.notifications;
+package com.wiredbarrack.modulith_exploration.notifications.internal;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

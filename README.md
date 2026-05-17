@@ -260,5 +260,116 @@ spring:
  this helps us to view h2console and tables in web browsers
 http://localhost:8080/h2-console/
 
+## Phase 01: Understanding boundaries
+At this commit: 83c1cae334684cd9928046619bb0fe861e3200af
+We have files that are divided into packages basis domains but if you notice OrderService and it imports :
+```
+
+package com.wiredbarrack.modulith_exploration.orders;
+
+import com.wiredbarrack.modulith_exploration.inventory.internal.Inventory;
+import com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository;
+import com.wiredbarrack.modulith_exploration.notifications.internal.Notification;
+import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
+
+```
+
+There are no boundaries enforced! order domain is essentially querying Inventory table directly and has a hard dependency upon Notification (Don't mind synchronous nature of notification, you its just for showcasing the use case!)
+
+But as you may argue that we can make things package private and then expose domain services to talk! and you are right but to some extent!
+
+At this commit:
+
+We have every domain having their respective service at base package level and all the repository at `basePackage.internal`;
+Thus, we are saying use services as interface to communicate, but you cannot enforce it - why as in java nested packages are considered as separate packages altogether and cannot access methods even if they reside in the same parent package, so you have to make them public and once everything is public no boundaries are enforced
+But But, if you see the our modularity test will fail now!:
+
+Screenshot of list Modules:
+Check how the classes at base package level makes public API and nested classes and packages are enforced to be private (this also explains why our modularity test used to pass earlier).
+```
+
+# Utility
+> Logical name: utility
+> Base package: com.wiredbarrack.modulith_exploration.utility
+> Spring beans:
+  + ….DatabaseBackupUtility
+
+# Orders
+> Logical name: orders
+> Base package: com.wiredbarrack.modulith_exploration.orders
+> Spring beans:
+  + ….OrderSevice
+  o ….internal.OrderDataSeeder
+  o ….internal.OrderRepository
+
+# Inventory
+> Logical name: inventory
+> Base package: com.wiredbarrack.modulith_exploration.inventory
+> Spring beans:
+  + ….InventoryService
+  o ….internal.InventoryDataSeeder
+  o ….internal.InventoryRepository
+
+# Notifications
+> Logical name: notifications
+> Base package: com.wiredbarrack.modulith_exploration.notifications
+> Spring beans:
+  + ….NotificationService
+  o ….internal.NotificationDataSeeder
+  o ….internal.NotificationRepository
+
+# Users
+> Logical name: users
+> Base package: com.wiredbarrack.modulith_exploration.users
+> Spring beans:
+  + ….UserService
+  o ….internal.UserDataSeeder
+  o ….internal.UserRepository
+
+```
+Check Modularity Test:
+
+```
+org.springframework.modulith.core.Violations: - Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.Inventory within module 'inventory'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.inventory.internal.Inventory.getCount()> in (OrderSevice.java:35)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.Inventory within module 'inventory'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.inventory.internal.Inventory.setCount(java.lang.Integer)> in (OrderSevice.java:35)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository within module 'inventory'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository.save(java.lang.Object)> in (OrderSevice.java:36)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository within module 'inventory'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository.findById(java.lang.Object)> in (OrderSevice.java:31)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.notifications.internal.Notification$NotificationBuilder within module 'notifications'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.notifications.internal.Notification$NotificationBuilder.build()> in (OrderSevice.java:40)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.Inventory within module 'inventory'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.inventory.internal.Inventory.getCount()> in (OrderSevice.java:32)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.notifications.internal.Notification within module 'notifications'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.notifications.internal.Notification.builder()> in (OrderSevice.java:40)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.notifications.internal.Notification$NotificationBuilder within module 'notifications'!
+Method <com.wiredbarrack.modulith_exploration.orders.OrderSevice.placeOrder(com.wiredbarrack.modulith_exploration.orders.internal.Order)> calls method <com.wiredbarrack.modulith_exploration.notifications.internal.Notification$NotificationBuilder.message(java.lang.String)> in (OrderSevice.java:40)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository within module 'inventory'!
+Field <com.wiredbarrack.modulith_exploration.orders.OrderSevice.inventoryRepository> has type <com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository> in (OrderSevice.java:0)
+- Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.internal.Inventory within module 'inventory'!
+Field <com.wiredbarrack.modulith_exploration.orders.internal.Order.itemId> has annotation member of type <com.wiredbarrack.modulith_exploration.inventory.internal.Inventory> in (Order.java:0)
+
+	at org.springframework.modulith.core.Violations.and(Violations.java:144)
+	at java.base/java.util.stream.ReduceOps$1ReducingSink.accept(ReduceOps.java:80)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.HashMap$ValueSpliterator.forEachRemaining(HashMap.java:1787)
+	at java.base/java.util.stream.Streams$ConcatSpliterator.forEachRemaining(Streams.java:735)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:921)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.reduce(ReferencePipeline.java:657)
+	at org.springframework.modulith.core.ApplicationModules.detectViolations(ApplicationModules.java:475)
+	at org.springframework.modulith.core.ApplicationModules.verify(ApplicationModules.java:440)
+	at com.wiredbarrack.modulith_exploration.ModulithExplorationApplicationTests.checkModularity(ModulithExplorationApplicationTests.java:22)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+```
+
+Thus modulith enforces us to follow domain boundaries!
+
 ## References:
 1. Spring Modulith Documentation:https://docs.spring.io/spring-modulith/reference/index.html

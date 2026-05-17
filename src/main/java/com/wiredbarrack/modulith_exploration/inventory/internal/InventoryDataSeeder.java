@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.inventory;
+package com.wiredbarrack.modulith_exploration.inventory.internal;
 
 import lombok.AllArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
