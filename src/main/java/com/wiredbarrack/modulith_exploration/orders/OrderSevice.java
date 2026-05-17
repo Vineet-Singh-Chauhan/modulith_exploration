@@ -1,8 +1,6 @@
 package com.wiredbarrack.modulith_exploration.orders;
 
-import com.wiredbarrack.modulith_exploration.inventory.internal.Inventory;
-import com.wiredbarrack.modulith_exploration.inventory.internal.InventoryRepository;
-import com.wiredbarrack.modulith_exploration.notifications.internal.Notification;
+import com.wiredbarrack.modulith_exploration.inventory.InventoryService;
 import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
 import com.wiredbarrack.modulith_exploration.orders.internal.Order;
 import com.wiredbarrack.modulith_exploration.orders.internal.OrderRepository;
@@ -16,7 +14,7 @@ import java.util.List;
 @Service
 public class OrderSevice {
     private OrderRepository orderRepository;
-    private InventoryRepository inventoryRepository;
+    private InventoryService inventoryService;
     private NotificationService notificationService;
 
     public Order getOrder(Integer id){
@@ -28,16 +26,15 @@ public class OrderSevice {
     }
 
     public Order placeOrder(Order order){
-        Inventory orderInvetoryDetails = inventoryRepository.findById(order.getId()).orElseThrow(()->new RuntimeException("No item with given id exists in inventory ?"));
-        if(orderInvetoryDetails.getCount()<order.getItemCount()){
+        int availableItems = inventoryService.getInventoryCount(order.getId());
+        if(availableItems<order.getItemCount()){
             throw new RuntimeException("We dont have enough stocks for requested item, please come later!");
         }
-        orderInvetoryDetails.setCount(orderInvetoryDetails.getCount()-order.getItemCount());
-        inventoryRepository.save(orderInvetoryDetails);
+        inventoryService.acquireInventoryItem(order.getId(), order.getItemCount());
         order.setStatus("PENDING");
         Order orderPlaced = orderRepository.save(order);
         log.info("Order Placed with id : {}", orderPlaced.getId());
-        notificationService.saveNotification(Notification.builder().message("Your Order is under processing!").build());
+        notificationService.saveNotification("Your Order is under processing!");
         return orderPlaced;
     }
 }

@@ -11,4 +11,22 @@ public class InventoryService {
     public Inventory getInventory(Integer id){
         return inventoryRepository.findById(id).orElseThrow(()->new RuntimeException("No inventory found with this id"));
     }
+
+    public int getInventoryCount(Integer id){
+         Inventory inventory = inventoryRepository.findById(id).orElseThrow(()->new RuntimeException("No inventory found with this id"));
+         return inventory.getCount();
+    }
+
+    public Inventory acquireInventoryItem(Integer id, int count) {
+        Inventory inventory = inventoryRepository.findById(id).orElseThrow(()->new RuntimeException("No inventory found with this id"));
+        if(inventory.getCount()<count){
+          throw  new RuntimeException("Not enough items!");
+        }
+        inventory.setCount(inventory.getCount()-count);
+       return inventoryRepository.save(inventory);
+    }
+
+    public Inventory saveInventory(Inventory inventory){
+        return inventoryRepository.save(inventory);
+    }
 }

@@ -1,6 +1,5 @@
 package com.wiredbarrack.modulith_exploration.orders.internal;
 
-import com.wiredbarrack.modulith_exploration.inventory.internal.Inventory;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.Reference;
 
 import java.time.LocalDateTime;
 
@@ -22,7 +20,6 @@ public class Order {
     @Id
     @GeneratedValue
     private Integer id;
-    @Reference(to = Inventory.class)
     private Integer itemId;
     private Integer itemCount;
     private String status;

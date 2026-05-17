@@ -13,9 +13,8 @@ public class NotificationService {
     public Notification getNotification(Integer id){
         return notificationRepository.findById(id).orElseThrow(()->new RuntimeException("No notification found"));
     }
-    public Notification saveNotification(Notification notification){
-        notification.setStatus("PENDING");
-        return notificationRepository.save(notification);
+    public Notification saveNotification(String message){
+        return notificationRepository.save(Notification.builder().message(message).status("PENDING").build());
     }
     public List<Notification> saveNotifications(List<Notification> notifications){
         return notificationRepository.saveAll(notifications);

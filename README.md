@@ -278,7 +278,7 @@ There are no boundaries enforced! order domain is essentially querying Inventory
 
 But as you may argue that we can make things package private and then expose domain services to talk! and you are right but to some extent!
 
-At this commit:
+At this commit: ef4e9a4eeac348d5d915a799d11a42583e86b415
 
 We have every domain having their respective service at base package level and all the repository at `basePackage.internal`;
 Thus, we are saying use services as interface to communicate, but you cannot enforce it - why as in java nested packages are considered as separate packages altogether and cannot access methods even if they reside in the same parent package, so you have to make them public and once everything is public no boundaries are enforced
@@ -369,7 +369,63 @@ Field <com.wiredbarrack.modulith_exploration.orders.internal.Order.itemId> has a
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 ```
 
-Thus modulith enforces us to follow domain boundaries!
+Thus, modulith enforces us to follow domain boundaries!
+## Fixing modularity tests:
+
+We have remove direct cross module dependencies and shall expose public APIs through services (in our case).
+At this commit :
+I have refactored the code to remove cross-domain boundaries
+Also note that in Order.java I had mistakenly placed @Reference(to = Inventory.java) that I have removed as We shall not have hard FK links in DB as well to have complete modularity and @Reference was any was wrong for SQL entities.
+But we shall have FKs logically enforced in application layer to have truely modularised DB.
+Architectural Takeaway: Hard JPA mapping is for consistency within a single domain boundary. Loose ID reference is for scalability and isolation across domain boundaries.
+For Example:
+
+```
+package com.wiredbarrack.modulith_exploration.orders.internal;
+
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+public class Order {
+    @Id @GeneratedValue 
+    private Integer id;
+
+    // Hard mapping is PERFECT here because both classes live in the same module
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "order_id")
+    private List<OrderLineItem> items;
+}
+```
+
+```
+package com.wiredbarrack.modulith_exploration.orders.internal;
+
+import com.wiredbarrack.modulith_exploration.inventory.InventoryService;
+import com.wiredbarrack.modulith_exploration.inventory.InventoryDTO;
+import org.springframework.stereotype.Service;
+
+@Service
+public class OrderDetailFacade {
+
+    private final OrderRepository orderRepository;
+    private final InventoryService inventoryService; // Public API entrypoint
+
+    public OrderResponse getOrderDetails(Integer orderId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        
+        // Fetch the loose dependency explicitly through the public gateway
+        InventoryDTO itemDetails = inventoryService.getInventoryItem(order.getItemId());
+        
+        // Combine them into a single response object for the UI
+        return new OrderResponse(order, itemDetails);
+    }
+}
+
+```
+
+
+Now, the modularity tests pass!.
 
 ## References:
 1. Spring Modulith Documentation:https://docs.spring.io/spring-modulith/reference/index.html
