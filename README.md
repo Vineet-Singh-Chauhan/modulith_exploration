@@ -373,7 +373,7 @@ Thus, modulith enforces us to follow domain boundaries!
 ## Fixing modularity tests:
 
 We have remove direct cross module dependencies and shall expose public APIs through services (in our case).
-At this commit :
+At this commit : 4829a3550bbe34d1589c03c5391db82c40212675
 I have refactored the code to remove cross-domain boundaries
 Also note that in Order.java I had mistakenly placed @Reference(to = Inventory.java) that I have removed as We shall not have hard FK links in DB as well to have complete modularity and @Reference was any was wrong for SQL entities.
 But we shall have FKs logically enforced in application layer to have truely modularised DB.
@@ -426,6 +426,89 @@ public class OrderDetailFacade {
 
 
 Now, the modularity tests pass!.
+
+## More on  handling FKs:
+When you move to a modular architecture, you deliberately drop physical Foreign Key (FK) constraints at the database level between different modules. Instead, you rely on Logical Foreign Keys enforced by your application logic.
+The Real-World Reality: Database FKs are a Trap for Modularity
+
+If you put a physical database constraint between the orders table and the inventory table, you have completely defeated the purpose of Spring Modulith.
+
+You have created a Shared Database Anti-Pattern. Even though your Java code looks beautifully decoupled into packages, your database schemas are still tangled together in a tight knot. If you ever want to split inventory into its own microservice or its own database instance later, that physical constraint will completely block you.
+How to Handle Data Integrity Without Database FKs
+
+But if there's no FK constraint, what stops someone from creating an order with a productId that doesn't exist?
+
+You shift the responsibility of integrity from the database engine to the application services. You handle this through three defensive layers:
+1. Application-Level Validation (The Front Line)
+
+Before an entity is saved, your service layer must validate that the referenced ID is real by querying the target module's public API.
+Java
+```
+package com.wiredbarrack.modulith_exploration.orders.internal;
+
+import com.wiredbarrack.modulith_exploration.inventory.InventoryService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final InventoryService inventoryService; // The public gatekeeper
+
+    @Transactional
+    public Order createOrder(OrderRequest request) {
+        // 1. Enforce data integrity programmatically BEFORE saving
+        boolean itemExists = inventoryService.isValidItem(request.getItemId());
+        if (!itemExists) {
+            throw new IllegalArgumentException("Cannot place order: Product ID does not exist.");
+        }
+
+        // 2. Proceed with saving if valid
+        Order order = Order.builder()
+            .itemId(request.getItemId())
+            .itemCount(request.getItemCount())
+            .status("CREATED")
+            .build();
+            
+        return orderRepository.save(order);
+    }
+}
+```
+
+2. Handling Deletions via Events (Event-Driven Integrity)
+
+In a traditional database, you might use ON DELETE CASCADE or ON DELETE RESTRICT. In a modular architecture, you handle deletions asynchronously using Spring Application Events.
+
+If an item is deleted in the inventory module, it fires an internal domain event. The orders module listens for this event and decides how to handle its own data integrity safely:
+Java
+
+```
+package com.wiredbarrack.modulith_exploration.orders.internal;
+
+import com.wiredbarrack.modulith_exploration.inventory.InventoryDeletedEvent;
+import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class InventoryEventListener {
+
+    private final OrderRepository orderRepository;
+
+    @ApplicationModuleListener
+    public void onInventoryDeleted(InventoryDeletedEvent event) {
+        // Handle the "foreign key deletion" within your own module's context
+        // Option A: Cancel pending orders for this item
+        // Option B: Archive/Soft-delete records smoothly
+        orderRepository.failOrdersForDeletedItem(event.getItemId());
+    }
+}
+```
+3. Defending Against In-Flight Changes (The Outbox Pattern)
+
+Because you are using Spring Modulith, it comes bundled with an Event Publication Registry. If the inventory module publishes a change, Modulith saves that event into a special database table (event_publication) within the same transaction. Even if the system crashes mid-operation, Modulith ensures the event is eventually delivered to the orders module, guaranteeing eventual consistency across your logical boundaries.
+
+We will discuss events in detail in next article.
 
 ## References:
 1. Spring Modulith Documentation:https://docs.spring.io/spring-modulith/reference/index.html
