@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class DatabaseBackupUtility {
+class DatabaseBackupUtility {
 
     private final JdbcTemplate jdbcTemplate;
 

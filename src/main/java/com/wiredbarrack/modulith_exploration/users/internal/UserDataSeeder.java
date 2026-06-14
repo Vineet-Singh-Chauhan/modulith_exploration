@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
-public class UserDataSeeder implements CommandLineRunner {
+class UserDataSeeder implements CommandLineRunner {
     private UserRepository userRepository;
 
     @Override

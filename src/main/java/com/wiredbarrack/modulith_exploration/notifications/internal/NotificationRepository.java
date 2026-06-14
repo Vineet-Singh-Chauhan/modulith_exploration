@@ -4,5 +4,5 @@ import org.springframework.data.repository.ListCrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface NotificationRepository extends ListCrudRepository<Notification,Integer> {
+interface NotificationRepository extends ListCrudRepository<Notification,Integer> {
 }

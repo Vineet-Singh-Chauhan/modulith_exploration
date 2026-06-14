@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
-public class OrderDataSeeder implements CommandLineRunner {
+class OrderDataSeeder implements CommandLineRunner {
     private OrderRepository orderRepository;
 
     @Override

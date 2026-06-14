@@ -7,7 +7,7 @@ import java.util.List;
 
 @Component
 @AllArgsConstructor
-public class InventoryDataSeeder implements CommandLineRunner {
+class InventoryDataSeeder implements CommandLineRunner {
     private InventoryRepository inventoryRepository;
     @Override
     public void run(String ...args){

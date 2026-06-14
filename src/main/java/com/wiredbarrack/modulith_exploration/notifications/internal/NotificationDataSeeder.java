@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @AllArgsConstructor
-public class NotificationDataSeeder implements CommandLineRunner {
+class NotificationDataSeeder implements CommandLineRunner {
     private NotificationRepository inventoryRepository;
 
     @Override
