@@ -4,5 +4,5 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-interface InventoryRepository extends CrudRepository<Inventory, Integer> {
+interface InventoryRepository extends CrudRepository<InventoryEntity, Integer> {
 }

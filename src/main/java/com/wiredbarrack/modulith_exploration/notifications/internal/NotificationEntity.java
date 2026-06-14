@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.users.internal;
+package com.wiredbarrack.modulith_exploration.notifications.internal;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,19 +14,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="users")
 @Builder
+@Table(name="notifications")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+class NotificationEntity {
     @Id
     @GeneratedValue
     private Integer id;
-    private String name;
-    private String email;
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private String message;
+    private String status;
     @CreationTimestamp
     private LocalDateTime createdAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

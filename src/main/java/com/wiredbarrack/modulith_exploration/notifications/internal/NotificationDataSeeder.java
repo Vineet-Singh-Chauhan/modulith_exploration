@@ -11,6 +11,6 @@ class NotificationDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String ...args){
-        inventoryRepository.save(Notification.builder().message("Order is delivered").status("PENDING").build());
+        inventoryRepository.save(NotificationEntity.builder().message("Order is delivered").status("PENDING").build());
     }
 }

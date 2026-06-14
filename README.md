@@ -14,4 +14,9 @@ But before we dive straight into events lets first complete a few basic concepts
 So, before diving into the article, I have refactored the code to have proper exceptions and a generic exception.
 Also, services has been replaced by interfaces and their implementation has been moved to internal packages. We made all classes except the service interfaces as package private to adhere to intended architecture
 
+One more improvement, I did is that we have a public record per domain for cross domain communication while we keep our DB entity private to the domain .
+
+    @Query("SELECT new com.wiredbarrack.modulith_exploration.inventory.Inventory(i.id,i.name,i.category,i.count) FROM product p where p.id = :id ")
+    Optional<Inventory> findProductById(Integer id);
+
 

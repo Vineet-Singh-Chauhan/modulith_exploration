@@ -11,6 +11,6 @@ class UserDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String ...args){
-        userRepository.save(User.builder().name("Vineet").email("vineet.wiredbarrack@gmail.com").build());
+        userRepository.save(UserEntity.builder().name("Vineet").email("vineet.wiredbarrack@gmail.com").build());
     }
 }

@@ -1,6 +1,5 @@
 package com.wiredbarrack.modulith_exploration.orders;
 
-import com.wiredbarrack.modulith_exploration.orders.internal.Order;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

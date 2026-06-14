@@ -12,6 +12,6 @@ class OrderDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String ...args){
-        orderRepository.save(Order.builder().itemId(1).status("DELIVERED").build());
+        orderRepository.save(OrderEntity.builder().itemId(1).status("DELIVERED").build());
     }
 }

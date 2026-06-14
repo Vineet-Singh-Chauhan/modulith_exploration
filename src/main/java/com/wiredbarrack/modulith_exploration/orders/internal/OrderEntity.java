@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Order {
+class OrderEntity{
     @Id
     @GeneratedValue
     private Integer id;

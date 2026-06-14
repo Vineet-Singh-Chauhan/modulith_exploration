@@ -3,6 +3,7 @@ package com.wiredbarrack.modulith_exploration.inventory.internal;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,11 +14,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name="inventory")
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inventory {
+class InventoryEntity {
     @Id
     @GeneratedValue
     private Integer id;

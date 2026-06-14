@@ -11,6 +11,6 @@ class InventoryDataSeeder implements CommandLineRunner {
     private InventoryRepository inventoryRepository;
     @Override
     public void run(String ...args){
-        inventoryRepository.saveAll(List.of(Inventory.builder().name("ice cream").category("SWEETS").count(4).build(), Inventory.builder().name("tea").category("BEVERAGES").count(45).build()));
+        inventoryRepository.saveAll(List.of(InventoryEntity.builder().name("ice cream").category("SWEETS").count(4).build(), InventoryEntity.builder().name("tea").category("BEVERAGES").count(45).build()));
     }
 }

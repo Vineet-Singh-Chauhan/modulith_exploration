@@ -1,8 +1,9 @@
-package com.wiredbarrack.modulith_exploration.notifications.internal;
+package com.wiredbarrack.modulith_exploration.users.internal;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,18 +14,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name="users")
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Notification {
+class UserEntity {
     @Id
     @GeneratedValue
     private Integer id;
-    private String message;
-    private String status;
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    private String name;
+    private String email;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }
