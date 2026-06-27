@@ -2,14 +2,16 @@ package com.wiredbarrack.modulith_exploration.notifications.internal;
 
 import com.wiredbarrack.modulith_exploration.notifications.dto.Notification;
 import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 class NotificationServiceImpl implements NotificationService {
-    private NotificationRepository notificationRepository;
-    private NotificationMapper mapper;
+    private final NotificationRepository notificationRepository;
+    private final  NotificationMapper mapper;
 
     public Notification getNotification(Integer id){
         NotificationEntity notification = notificationRepository.findById(id).orElseThrow(()->new RuntimeException("No notification found"));

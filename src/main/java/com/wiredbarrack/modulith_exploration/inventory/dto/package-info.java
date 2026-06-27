@@ -1,2 +1,2 @@
-//@org.springframework.modulith.NamedInterface("dto")
-package com.wiredbarrack.modulith_exploration.inventory.dto;
+@org.springframework.modulith.NamedInterface("dto")
+    package com.wiredbarrack.modulith_exploration.inventory.dto;
