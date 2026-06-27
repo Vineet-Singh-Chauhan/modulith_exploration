@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.inventory;
+package com.wiredbarrack.modulith_exploration.inventory.dto;
 
 import lombok.Builder;
 

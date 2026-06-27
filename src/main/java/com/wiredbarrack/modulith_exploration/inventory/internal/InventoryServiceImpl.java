@@ -1,7 +1,7 @@
 package com.wiredbarrack.modulith_exploration.inventory.internal;
 
-import com.wiredbarrack.modulith_exploration.inventory.Inventory;
 import com.wiredbarrack.modulith_exploration.inventory.InventoryService;
+import com.wiredbarrack.modulith_exploration.inventory.dto.Inventory;
 import org.springframework.stereotype.Service;
 
 @Service

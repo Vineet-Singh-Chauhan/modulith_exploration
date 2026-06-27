@@ -1,6 +1,6 @@
 package com.wiredbarrack.modulith_exploration.users.internal;
 
-import com.wiredbarrack.modulith_exploration.users.User;
+import com.wiredbarrack.modulith_exploration.users.dto.User;
 import com.wiredbarrack.modulith_exploration.users.UserService;
 import org.springframework.stereotype.Service;
 

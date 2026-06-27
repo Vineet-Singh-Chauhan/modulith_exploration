@@ -1,6 +1,6 @@
 package com.wiredbarrack.modulith_exploration.notifications.internal;
 
-import com.wiredbarrack.modulith_exploration.notifications.Notification;
+import com.wiredbarrack.modulith_exploration.notifications.dto.Notification;
 import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
 import org.springframework.stereotype.Service;
 

@@ -1,5 +1,6 @@
 package com.wiredbarrack.modulith_exploration.inventory;
 
+import com.wiredbarrack.modulith_exploration.inventory.dto.Inventory;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.orders;
+package com.wiredbarrack.modulith_exploration.orders.dto;
 
 public record Order(
     Integer id,

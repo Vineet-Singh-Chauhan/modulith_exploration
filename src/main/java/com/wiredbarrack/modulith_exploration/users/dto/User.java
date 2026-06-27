@@ -1,4 +1,4 @@
-package com.wiredbarrack.modulith_exploration.users;
+package com.wiredbarrack.modulith_exploration.users.dto;
 
 public record User(
         Integer id,

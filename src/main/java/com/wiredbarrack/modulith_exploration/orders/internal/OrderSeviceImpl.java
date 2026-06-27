@@ -2,7 +2,7 @@ package com.wiredbarrack.modulith_exploration.orders.internal;
 
 import com.wiredbarrack.modulith_exploration.inventory.InventoryService;
 import com.wiredbarrack.modulith_exploration.notifications.NotificationService;
-import com.wiredbarrack.modulith_exploration.orders.Order;
+import com.wiredbarrack.modulith_exploration.orders.dto.Order;
 import com.wiredbarrack.modulith_exploration.orders.OrderSevice;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
