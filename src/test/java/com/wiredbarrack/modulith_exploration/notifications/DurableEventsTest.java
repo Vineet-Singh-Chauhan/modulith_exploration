@@ -43,7 +43,7 @@ class DurableEventsTest {
     }
 
     @Test
-    void whenListenerFails_eventPublicationRemainsIncomplete() throws InterruptedException {
+    void whenListenerFails_publicationIsMarkedFailed() throws InterruptedException {
 
         when(notificationService.saveNotification(anyString()))
                 .thenThrow(new RuntimeException("Simulated notification failure!"));
@@ -53,24 +53,30 @@ class DurableEventsTest {
 
         Thread.sleep(2000);
 
-        List<Map<String, Object>> publications = jdbcTemplate.queryForList("SELECT * FROM event_publication");
+        List<Map<String, Object>> publications =
+                jdbcTemplate.queryForList("SELECT * FROM event_publication");
 
         logPublicationTable(publications, "FAILURE SCENARIO");
 
         assertFalse(publications.isEmpty(),
                 "event_publication must have at least one row — event was published");
 
-        boolean hasIncompletePublication = publications.stream()
-                .anyMatch(row -> row.get("completion_date") == null);
+        Map<String, Object> row = publications.get(0);
 
-        assertTrue(hasIncompletePublication,
-                "completion_date must be null — listener threw, event is pending re-delivery");
+        assertNull(row.get("completion_date"),
+                "completion_date must be null when the listener fails");
 
-        log.info("FAILURE SCENARIO confirmed: event stored safely, completion_date = null, awaiting re-delivery.");
+        assertEquals("FAILED", row.get("status"),
+                "status must be FAILED when listener throws an exception");
+
+        assertNotNull(row.get("completion_attempts"),
+                "completion_attempts must be set even on failure");
+
+        log.info("FAILURE confirmed: status=FAILED, completion_date=null, row is eligible for resubmission.");
     }
 
     @Test
-    void whenListenerSucceeds_eventPublicationIsMarkedComplete() throws InterruptedException {
+    void whenListenerSucceeds_publicationIsMarkedCompleted() throws InterruptedException {
 
         when(notificationService.saveNotification(anyString()))
                 .thenReturn(new Notification(99, "Your order has been placed successfully!", "SENT"));
@@ -80,34 +86,38 @@ class DurableEventsTest {
 
         Thread.sleep(2000);
 
-        List<Map<String, Object>> publications = jdbcTemplate.queryForList("SELECT * FROM event_publication");
+        List<Map<String, Object>> publications =
+                jdbcTemplate.queryForList("SELECT * FROM event_publication");
 
         logPublicationTable(publications, "SUCCESS SCENARIO");
 
         assertFalse(publications.isEmpty(),
                 "event_publication must have at least one row — event was published");
 
-        boolean hasCompletedPublication = publications.stream()
-                .anyMatch(row -> row.get("completion_date") != null);
+        Map<String, Object> row = publications.get(0);
 
-        assertTrue(hasCompletedPublication,
-                "completion_date must be set — listener succeeded, event delivery is complete");
+        assertNotNull(row.get("completion_date"),
+                "completion_date must be set when the listener succeeds");
 
-        log.info("SUCCESS SCENARIO confirmed: event published, listener ran, completion_date is set.");
+        assertEquals("COMPLETED", row.get("status"),
+                "status must be COMPLETED when listener finishes without throwing");
+
+        log.info("SUCCESS confirmed: status=COMPLETED, completion_date set.");
     }
 
     private void logPublicationTable(List<Map<String, Object>> publications, String scenario) {
         log.info("=== event_publication — {} ({} rows) ===", scenario, publications.size());
         for (Map<String, Object> row : publications) {
-            log.info("  id              : {}", row.get("id"));
-            log.info("  event_type      : {}", row.get("event_type"));
-            log.info("  listener_id     : {}", row.get("listener_id"));
-            log.info("  publication_date: {}", row.get("publication_date"));
-            log.info("  completion_date : {}", row.get("completion_date")); // null = not delivered yet
-            log.info("  serialized_event: {}", row.get("serialized_event"));
-            log.info("  status          : {}", row.get("status"));
+            log.info("  id                    : {}", row.get("id"));
+            log.info("  event_type            : {}", row.get("event_type"));
+            log.info("  listener_id           : {}", row.get("listener_id"));
+            log.info("  publication_date      : {}", row.get("publication_date"));
+            log.info("  completion_date       : {}", row.get("completion_date"));
+            log.info("  serialized_event      : {}", row.get("serialized_event"));
+            log.info("  status                : {}", row.get("status"));
+            log.info("  completion_attempts   : {}", row.get("completion_attempts"));
+            log.info("  last_resubmission_date: {}", row.get("last_resubmission_date"));
             log.info("  ----");
         }
     }
 }
-

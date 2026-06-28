@@ -26,3 +26,12 @@ spring:
       web-allow-others: true
     datasource:
       generate-unique-name: false
+
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+      completion-mode: UPDATE
+      staleness:
+        published: 10m
+        processing: 5m   
+        resubmitted: 10m 
