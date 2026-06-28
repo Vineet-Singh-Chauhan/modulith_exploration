@@ -1,10 +1,11 @@
 package com.wiredbarrack.modulith_exploration.orders.dto;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
-@Getter
 @Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class OrderPlaced {
     private Integer id;
 }

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.5</version>
+		<version>4.0.7</version>
 		<relativePath/>
 	</parent>
 
@@ -17,7 +17,7 @@
 
 	<properties>
 		<java.version>21</java.version>
-		<spring-modulith.version>1.2.0</spring-modulith.version>
+		<spring-modulith.version>2.0.7</spring-modulith.version>
 	</properties>
 
 	<dependencies>
@@ -36,6 +36,7 @@
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-jpa</artifactId>
+			<version>2.0.7</version>
 		</dependency>
 
 		<dependency>
@@ -112,6 +113,8 @@
 							<version>1.6.3</version>
 						</path>
 					</annotationProcessorPaths>
+					<source>21</source>
+					<target>21</target>
 				</configuration>
 			</plugin>
 		</plugins>

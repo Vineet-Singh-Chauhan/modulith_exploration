@@ -18,9 +18,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 class OrderSeviceImpl implements OrderSevice {
-    private OrderRepository orderRepository;
-    private InventoryService inventoryService;
-    private OrderMapper mapper;
+    private final OrderRepository orderRepository;
+    private final InventoryService inventoryService;
+    private final OrderMapper mapper;
     private final ApplicationEventPublisher events;
 
     public Order getOrder(Integer id){

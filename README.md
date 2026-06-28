@@ -305,16 +305,130 @@ Automatic re-publication of the events can be enabled via the `spring.modulith.e
 
 To mimic this flow, lets deliberately add exception to notification service and check if event is stored with which state in `event_publication` table.
 
+```java
+
+@Slf4j
+@SpringBootTest
+class DurableEventsTest {
+
+    @Autowired
+    ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @MockBean
+    NotificationService notificationService;
+
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate.execute("DELETE FROM event_publication");
+        reset(notificationService);
+    }
+
+    @Test
+    void whenListenerFails_eventPublicationRemainsIncomplete() throws InterruptedException {
+
+        when(notificationService.saveNotification(anyString()))
+                .thenThrow(new RuntimeException("Simulated notification failure!"));
+
+        transactionTemplate.executeWithoutResult(status ->
+                eventPublisher.publishEvent(OrderPlaced.builder().id(1).build()));
+
+        Thread.sleep(2000);
+
+        List<Map<String, Object>> publications = jdbcTemplate.queryForList("SELECT * FROM event_publication");
+
+        logPublicationTable(publications, "FAILURE SCENARIO");
+
+        assertFalse(publications.isEmpty(),
+                "event_publication must have at least one row — event was published");
+
+        boolean hasIncompletePublication = publications.stream()
+                .anyMatch(row -> row.get("completion_date") == null);
+
+        assertTrue(hasIncompletePublication,
+                "completion_date must be null — listener threw, event is pending re-delivery");
+
+        log.info("FAILURE SCENARIO confirmed: event stored safely, completion_date = null, awaiting re-delivery.");
+    }
+
+    @Test
+    void whenListenerSucceeds_eventPublicationIsMarkedComplete() throws InterruptedException {
+
+        when(notificationService.saveNotification(anyString()))
+                .thenReturn(new Notification(99, "Your order has been placed successfully!", "SENT"));
+
+        transactionTemplate.executeWithoutResult(status ->
+                eventPublisher.publishEvent(OrderPlaced.builder().id(10).build()));
+
+        Thread.sleep(2000);
+
+        List<Map<String, Object>> publications = jdbcTemplate.queryForList("SELECT * FROM event_publication");
+
+        logPublicationTable(publications, "SUCCESS SCENARIO");
+
+        assertFalse(publications.isEmpty(),
+                "event_publication must have at least one row — event was published");
+
+        boolean hasCompletedPublication = publications.stream()
+                .anyMatch(row -> row.get("completion_date") != null);
+
+        assertTrue(hasCompletedPublication,
+                "completion_date must be set — listener succeeded, event delivery is complete");
+
+        log.info("SUCCESS SCENARIO confirmed: event published, listener ran, completion_date is set.");
+    }
+
+    private void logPublicationTable(List<Map<String, Object>> publications, String scenario) {
+        log.info("=== event_publication — {} ({} rows) ===", scenario, publications.size());
+        for (Map<String, Object> row : publications) {
+            log.info("  id              : {}", row.get("id"));
+            log.info("  event_type      : {}", row.get("event_type"));
+            log.info("  listener_id     : {}", row.get("listener_id"));
+            log.info("  publication_date: {}", row.get("publication_date"));
+            log.info("  completion_date : {}", row.get("completion_date")); // null = not delivered yet
+            log.info("  serialized_event: {}", row.get("serialized_event"));
+            log.info("  ----");
+        }
+    }
+}
+
+```
+
+![img_1.png](img_2.png)
+
+Spring Modulith's event_publication table doesn't actually store a "status" enum like PUBLISHED/PROCESSING/COMPLETED/FAILED. It's simpler — it just tracks incomplete vs completed via a single nullable timestamp column.
+
+Inferring the "status" of an event publication is purely based on COMPLETION_DATE:
+StateMeaningCOMPLETION_DATE IS NULLIncomplete — either still processing, never got picked up, or threw an exception that wasn't handled by a retry/completion mechanismCOMPLETION_DATE IS NOT NULLCompleted — the listener finished successfully
+There's no FAILED row state in the table itself. If a listener throws an exception:
+
+By default, the row stays incomplete (COMPLETION_DATE stays NULL), and Modulith's CompletionMode (configurable) decides whether to retry it on next republish.
+There's no separate persisted "this failed" marker — incomplete is the failed/pending signal, and Modulith can't distinguish "still mid-processing right now" from "errored and waiting for retry" just by looking at the row. That distinction lives in your application logs / exception handling, not the table.
+
+But after Modulith 2.0, they have added `status`, `Completion_attempts`, `Last_resubmission_date` fields to track events, the event lifecycle is now more robust and can be tracked easily after modulith 2.0.
+Following image shows event lifecycle:
+![img_3.png](img_3.png)
+source: https://docs.spring.io/spring-modulith/reference/events.html
 
 
+Publication states
 
+Each event publication has a EventPublication.Status:
 
+    PUBLISHED – The publication was stored and is waiting to be processed (or is about to be picked up).
 
+    PROCESSING – A listener has claimed the publication and is executing. The interceptor around the listener sets this before invoking the listener and sets it to COMPLETED or FAILED when the listener returns.
 
+    COMPLETED – The listener finished successfully. A completion date is set (unless the completion mode is DELETE).
 
+    FAILED – The listener threw an exception, or the publication was marked failed by the staleness mechanism (see Event Publication Staleness and Automatic Marking as Failed).
 
-
-
+    RESUBMITTED – A previously failed publication was resubmitted and is again pending processing.
 
 
 
