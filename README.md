@@ -1,26 +1,18 @@
-# Exploring Events In Spring Modulith 
+# Exploring Events in Spring Modulith
 
-In our last article, we discussed the basics of spring modulith and at this point we know that spring modulith does not magically turns our monolith into a modular monolith but instead provide a set of tests that help us to track places where we violate the modular design patterns and provide a set of tools that help us to reduce coupling and increase cohesion in our application, And one such tool is - Events.
+In our last article, we discussed the basics of Spring Modulith. At this point we know that Spring Modulith does not magically turn our monolith into a modular monolith. Instead, it provides a set of tests that help us track places where we violate modular design principles, along with a set of tools that help us reduce coupling and increase cohesion in our application. One such tool is — Events.
 
-But before we dive straight into events lets first complete a few basic concepts that we did not cover in our last article, this will help us to harden our foundation and have a quick refresher through our last position on code.
+But before we dive straight into events, let's first cover a few basic concepts that we didn't get to in the last article. This will help us harden our foundation and serves as a quick refresher of where we left off.
 
-# Left over topics:
-0. Named Interfaces
-1. Open Application Modules
-2. Defining Explicit Application Module Dependencies
-3. Customizing Module Detection Strategy
-4. Customizing Named Interface Detection
 
-So, before diving into the article, I have refactored the code to have proper exceptions and a generic exception.
-Also, services has been replaced by interfaces and their implementation has been moved to internal packages. We made all classes except the service interfaces as package private to adhere to intended architecture
+Before diving in, I refactored the code to have proper exceptions and a generic base exception.
+Services have also been replaced by interfaces, with their implementations moved into `internal` packages. We made all classes — except the service interfaces themselves — package-private, to enforce the intended architecture.
 
-One more improvement, I did is that we have a public record per domain for cross domain communication while we keep our DB entity private to the domain .
-At this point all our tests pass!
-![img.png](img.png)
+One more improvement: we now expose a public record per domain for cross-domain communication, while keeping the DB entity private to the domain.
+At this point, all our tests pass!
+
 
 ```
-
-.
 ├── main
 │   ├── java
 │   │   └── com
@@ -77,13 +69,15 @@ At this point all our tests pass!
                 └── modulith_exploration
                     └── ModulithExplorationApplicationTests.java
 ```
-This works fine if we have to expose a few DTOs/records per domain, but if a domain somehow needs to expose more than few DTOs we would like to have a separate package for the dtos
-but once we move it to that package, it would not be part of public api anymore
 
-That's where Named Interfaces come to our rescue,
-With the help of Named interfaces, we can define some sub-packages as public and thus part of public API
 
-Lets create a subpackage `dto` for each of our domains and move our records there.
+![img.png](img.png)
+This works fine if we only have to expose a few DTOs/records per domain. But if a domain needs to expose more than a handful, we'd want a separate package for those DTOs — the problem is that once we move them into a new package, they're no longer part of the public API.
+
+That's where Named Interfaces come to our rescue.
+With the help of named interfaces, we can mark some sub-packages as public, and thus part of the public API.
+
+Let's create a `dto` subpackage for each of our domains and move our records there.
 
 ```
 
@@ -94,14 +88,14 @@ Lets create a subpackage `dto` for each of our domains and move our records ther
 │   │           └── modulith_exploration
 │   │               ├── inventory
 │   │               │   ├── dto
-│   │               │   │   └── InventoryService.java
+│   │               │   │   └── Inventory.java
 │   │               │   ├── internal
 │   │               │   │   ├── InventoryDataSeeder.java
 │   │               │   │   ├── InventoryEntity.java
 │   │               │   │   ├── InventoryMapper.java
 │   │               │   │   ├── InventoryRepository.java
 │   │               │   │   └── InventoryServiceImpl.java
-│   │               │   └── Inventory.java
+│   │               │   └── InventoryService.java
 │   │               ├── ModulithExplorationApplication.java
 │   │               ├── notifications
 │   │               │   ├── dto
@@ -147,14 +141,14 @@ Lets create a subpackage `dto` for each of our domains and move our records ther
                 └── modulith_exploration
                     └── ModulithExplorationApplicationTests.java
 ```
- 
-I have started to consume the `Inventory` record in `placeOrder` method of `OrderServiceImpl` class, but I am not able to use it in the `InventoryRepository` class because it is in a different package and thus not part of public API.
+
+I've started consuming the `Inventory` record in the `placeOrder` method of `OrderServiceImpl`. But I can't use it from `InventoryRepository` directly, since `Inventory` now lives in a different package and isn't part of the public API.
 ```
         Inventory inventory = inventoryService.acquireInventoryItem(order.id(), order.itemCount());
         log.info("Inventory updated for item id : {} with count : {}", inventory.id(), inventory.count());
 ```
-Note: if we don't call any of the methods of `Inventory` record in `OrderServiceImpl` class, then it will not be a problem and modularity test will pass, but as soon as we call any of the methods of `Inventory` record in `OrderServiceImpl` class, it will fail because `Inventory` record is not part of public API anymore.
-So our Modularity test shall fail:
+Note: if we don't call any methods on the `Inventory` record from `OrderServiceImpl`, the modularity test will still pass — there's no violation yet. But as soon as we call any method on it (`.id()`, `.count()`, etc.), the test fails, because `Inventory` isn't exposed as part of the public API.
+So our modularity test fails with:
 
 ```
 org.springframework.modulith.core.Violations: - Module 'orders' depends on non-exposed type com.wiredbarrack.modulith_exploration.inventory.dto.Inventory within module 'inventory'!
@@ -180,9 +174,9 @@ Method <com.wiredbarrack.modulith_exploration.orders.internal.OrderSeviceImpl.pl
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
 ```
 To overcome this problem, we use named interfaces to expose the `Inventory` record to other modules.
-Thus, we add `package-info.java` file in the `inventory.dto` package and expose the `Inventory` record to other modules using named interfaces.
+We add a `package-info.java` file to the `inventory.dto` package, exposing the `Inventory` record to other modules via a named interface:
 
-```
+```java
 @org.springframework.modulith.NamedInterface("dto")
 package com.wiredbarrack.modulith_exploration.inventory.dto;
 ```
@@ -190,18 +184,17 @@ Now, our tests pass:
 
 ![img_1.png](img_1.png)
 
-Also, to strictly define the allowed dependencies for a module we can add `@org.springframework.modulith.AllowedDependencies` annotation to the `package-info.java` file of a module. For example:
-```
+We can also strictly define the allowed dependencies for a module by adding the `@org.springframework.modulith.ApplicationModule` annotation's `allowedDependencies` attribute to the module's `package-info.java`. For example:
+```java
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = {"inventory", "inventory::dto", "notifications"}
 )
 ```
 
-Still we have an problem, that our `OrderService` has an hard dependency on `NotificationService`(High Coupling), this has two-fold issues: 1. that application imports it causing high coupling, 2. It hampers independent testing of `OrderService`, as we need to mock it and any time NotifcationService changes, we need to touch every module that uses it.
-It also means that we will have to touch the class whenever we would like to integrate further functionality with the business event order completion.
+We still have a problem: our `OrderService` has a hard dependency on `NotificationService` (high coupling). This is problematic for two reasons: first, the direct import causes tight coupling; second, it hampers independent testing of `OrderService`, since we now need to mock `NotificationService`, and any change to it forces us to touch every module that depends on it.
+It also means we'd have to modify `OrderServiceImpl` itself every time we want to hook new functionality into the "order placed" business event.
 
 To overcome this problem, we can use the `ApplicationEvents` already provided by Modulith to decouple services
-
 
 Step 1: Create a new event class `OrderPlacedEvent` in the `orders` module, which will be published when an order is placed.
 ```java
@@ -239,7 +232,6 @@ class OrderEventListener {
 }
 ```
 
-
 This pattern decouples the original transaction from the notification work — when `placeOrder` commits, the listener fires asynchronously. That sounds ideal.
 
 But it has a critical flaw: **if the listener throws an exception, the event is silently lost.** There is no retry, no record, no safety net. The order exists in your database but the notification was never sent, and your system has no way to know that.
@@ -258,8 +250,6 @@ class OrderEventListener {
     }
 }
 ```
-
-
 
 This is the correct approach — but it is **boilerplate you have to remember to write every single time**. Forget `REQUIRES_NEW` and the listener silently runs outside a transaction. Forget `@Async` and a slow listener blocks the calling thread.
 
@@ -285,7 +275,6 @@ class OrderEventListener {
 
 `@ApplicationModuleListener` is a composed annotation that is equivalent to writing all three annotations correctly every time. But it goes further — it plugs into the **Event Publication Registry**, which is what gives us true durability.
 
-
 ### How the Registry Works
 
 When `placeOrder` calls `events.publishEvent(OrderPlaced.builder().id(orderId).build())`, Spring Modulith does not just fire and forget. It intercepts the publication and:
@@ -298,30 +287,30 @@ This is the outbox pattern, baked into the framework.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  placeOrder() — @Transactional                           │
-│                                                          │
-│   1. Save order to DB                                    │
-│   2. events.publishEvent(OrderPlaced)  ──────────────┐   │
-│                                                      │   │
-│   ┌── Modulith intercepts ───────────────────────┐  │   │
-│   │  Finds listeners for OrderPlaced             │  │   │
-│   │  INSERT INTO event_publication (1 row)       │◄─┘   │
-│   └──────────────────────────────────────────────┘       │
-│                                                          │
-│  COMMIT ─ both order row & publication row committed     │
+│  placeOrder() — @Transactional                            │
+│                                                            │
+│   1. Save order to DB                                     │
+│   2. events.publishEvent(OrderPlaced)  ──────────────┐    │
+│                                                       │    │
+│   ┌── Modulith intercepts ────────────────────────┐  │    │
+│   │  Finds listeners for OrderPlaced              │  │    │
+│   │  INSERT INTO event_publication (1 row)        │◄─┘    │
+│   └────────────────────────────────────────────────┘      │
+│                                                            │
+│  COMMIT ─ both order row & publication row committed      │
 └──────────────────────────────────────────────────────────┘
             │
             │  After commit
             ▼
 ┌──────────────────────────────────────────────────────────┐
-│  OrderEventListener.onOrderPlaced()  (async, new tx)     │
-│                                                          │
-│  SUCCESS → UPDATE event_publication SET status=COMPLETED │
-│  FAILURE → row untouched, status stays PUBLISHED/FAILED  │
+│  OrderEventListener.onOrderPlaced()  (async, new tx)      │
+│                                                            │
+│  SUCCESS → UPDATE event_publication SET completion_date=now() │
+│  FAILURE → row untouched, completion_date stays NULL      │
 └──────────────────────────────────────────────────────────┘
 ```
 
-
+(This is the simplified, pre-2.0 mental model — `completion_date` is the only signal. Spring Modulith 2.0 introduces a richer `Status` enum on top of this, which we'll cover later in this article.)
 
 ### Setting up the Registry
 
@@ -401,11 +390,11 @@ class NotificationsModuleTests {
 }
  ```
 
-### Durable Events:
-Now, consider a scenario where the `notifications` module is down when the `OrderPlaced` event is published. In this case, the event will be lost and the notification will not be sent. To overcome this problem, we can use durable events. Durable events are persisted in the database and can be replayed when the module is back up.
-So, spring modulith maintains a table `event_publication` in the database to store the events. When a module is down, the events are stored in this table and when the module is back up, the events are replayed.
+### Durable Events
 
+Now consider a scenario where the listener in the `notifications` module throws an exception — maybe a downstream dependency it relies on is unavailable. With a plain in-memory event listener, that event would simply be lost: the order exists, but the notification never goes out, and nothing in the system would tell you that.
 
+This is the problem durable events solve. Spring Modulith persists every event publication in the `event_publication` table as part of the original transaction. If a listener fails, the row for that publication stays incomplete instead of disappearing, so it can be detected and replayed later — either automatically on restart or via the resubmission APIs we'll cover further down.
 
 ### Enabling Automatic Re-publication on Restart
 
@@ -421,9 +410,7 @@ spring:
 
 With this enabled, any `event_publication` row without a completion date gets re-delivered to its listener on the next application startup.
 
-Automatic re-publication of the events can be enabled via the `spring.modulith.events.republish-outstanding-events-on-restart property`.
-
-To mimic this flow, lets deliberately add exception to notification service and check if event is stored with which state in `event_publication` table.
+To mimic this flow, let's deliberately throw an exception in the notification service and check what state the event ends up in within `event_publication`.
 
 ```java
 
@@ -521,36 +508,42 @@ class DurableEventsTest {
 
 ![img_1.png](img_2.png)
 
-Spring Modulith's event_publication table doesn't actually store a "status" enum like PUBLISHED/PROCESSING/COMPLETED/FAILED. It's simpler — it just tracks incomplete vs completed via a single nullable timestamp column.
+### What "Status" Actually Means Pre-2.0
 
-Inferring the "status" of an event publication is purely based on COMPLETION_DATE:
-StateMeaningCOMPLETION_DATE IS NULLIncomplete — either still processing, never got picked up, or threw an exception that wasn't handled by a retry/completion mechanismCOMPLETION_DATE IS NOT NULLCompleted — the listener finished successfully
-There's no FAILED row state in the table itself. If a listener throws an exception:
+Up through Spring Modulith 1.x, the `event_publication` table doesn't store a status enum like `PUBLISHED`/`PROCESSING`/`COMPLETED`/`FAILED`. It's simpler than that — it just tracks incomplete vs. completed via a single nullable timestamp column.
 
-By default, the row stays incomplete (COMPLETION_DATE stays NULL), and Modulith's CompletionMode (configurable) decides whether to retry it on next republish.
-There's no separate persisted "this failed" marker — incomplete is the failed/pending signal, and Modulith can't distinguish "still mid-processing right now" from "errored and waiting for retry" just by looking at the row. That distinction lives in your application logs / exception handling, not the table.
+Inferring the "status" of an event publication is purely based on `completion_date`:
 
-But after Modulith 2.0, they have added `status`, `Completion_attempts`, `Last_resubmission_date` fields to track events, the event lifecycle is now more robust and can be tracked easily after modulith 2.0.
-Following image shows event lifecycle:
+| State | Meaning |
+|---|---|
+| `completion_date IS NULL` | **Incomplete** — either still processing, never got picked up, or threw an exception that wasn't handled by a retry/completion mechanism |
+| `completion_date IS NOT NULL` | **Completed** — the listener finished successfully |
+
+There's no `FAILED` row state in the table itself in this model. If a listener throws an exception:
+
+- By default, the row stays incomplete (`completion_date` stays `NULL`), and the configured retry mechanism decides whether to pick it up again on the next republish.
+- There's no separate persisted "this failed" marker — incomplete *is* the failed/pending signal, and Modulith can't distinguish "still mid-processing right now" from "errored and waiting for retry" just by looking at the row. That distinction lives in your application logs and exception handling, not the table.
+
+### The Richer Lifecycle Introduced in Modulith 2.0
+
+Spring Modulith 2.0 closes this gap. It adds a `status` column, along with `completion_attempts` and `last_resubmission_date`, giving each publication a proper lifecycle that you can query and reason about directly — instead of inferring everything from a single nullable timestamp.
+
+The image below shows the event lifecycle as of 2.0:
+
 ![img_3.png](img_3.png)
-source: https://docs.spring.io/spring-modulith/reference/events.html
+*Source: [Spring Modulith reference docs](https://docs.spring.io/spring-modulith/reference/events.html)*
 
+**Publication states**
 
-Publication states
+Each event publication now has an `EventPublication.Status`:
 
-Each event publication has a EventPublication.Status:
-
-    PUBLISHED – The publication was stored and is waiting to be processed (or is about to be picked up).
-
-    PROCESSING – A listener has claimed the publication and is executing. The interceptor around the listener sets this before invoking the listener and sets it to COMPLETED or FAILED when the listener returns.
-
-    COMPLETED – The listener finished successfully. A completion date is set (unless the completion mode is DELETE).
-
-    FAILED – The listener threw an exception, or the publication was marked failed by the staleness mechanism (see Event Publication Staleness and Automatic Marking as Failed).
-
-    RESUBMITTED – A previously failed publication was resubmitted and is again pending processing.
-
-
+| Status | Meaning |
+|---|---|
+| `PUBLISHED` | The publication was stored and is waiting to be processed (or is about to be picked up). |
+| `PROCESSING` | A listener has claimed the publication and is executing. The interceptor around the listener sets this before invoking the listener, and sets it to `COMPLETED` or `FAILED` once the listener returns. |
+| `COMPLETED` | The listener finished successfully. A completion date is set (unless the completion mode is `DELETE`). |
+| `FAILED` | The listener threw an exception, or the publication was marked failed by the staleness mechanism (see below). |
+| `RESUBMITTED` | A previously failed publication was resubmitted and is again pending processing. |
 
 ### Event Publication Staleness and Automatic Failure Marking
 
@@ -572,12 +565,23 @@ spring:
         resubmitted: 10m  # rows stuck in RESUBMITTED for > 10 min → mark FAILED
 ```
 
-
 > **Note:** If all three values are zero (the default), the Staleness Monitor does not register its scheduled task at all — no overhead for applications that don't need it.
 
 The interval at which the monitor runs defaults to the minimum of the configured staleness durations. You can override it explicitly if needed.
 
+Also,  @EnableScheduling is required for Spring Modulith's Staleness Monitor to register .Its background task. The monitor periodically marks stuck event publications as FAILED.
+```
 
+@SpringBootApplication
+@EnableScheduling
+public class ModulithExplorationApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ModulithExplorationApplication.class, args);
+	}
+
+} 
+```
 ### Working with Failed Publications: The Resubmission API
 
 The `spring-modulith-events-api` artifact exposes three Spring beans that let you manage event publications programmatically. Add it to your `pom.xml`:
@@ -655,10 +659,7 @@ When resubmission runs:
 
 ---
 
-
-## Completion Modes (insert AFTER Resubmission API section)
-
----
+## Completion Modes
 
 ### Event Publication Completion Modes
 
@@ -711,11 +712,7 @@ void whenCompletionModeIsDelete_tableIsEmptyAfterSuccess() throws InterruptedExc
 
 ---
 
-
-
-## Event Serialization (insert AFTER Completion Modes, brief section)
-
----
+## Event Serialization
 
 ### How Events Are Serialized
 
@@ -758,9 +755,7 @@ class EventTestConfig {
 
 ---
 
-## Testing with PublishedEvents (insert AFTER the existing NotificationsModuleTests section)
-
----
+## Testing with PublishedEvents
 
 ### Testing Events from the Publisher's Side
 
@@ -834,9 +829,7 @@ The difference is purely stylistic — `AssertablePublishedEvents` folds the ass
 
 ---
 
-## Event Externalization (final major section)
-
----
+## Event Externalization
 
 ### Externalizing Events to Message Brokers
 
@@ -975,7 +968,7 @@ There is no separate outbox table or mechanism to learn. The same durable event 
 
 ---
 
-## QUICK REFERENCE: Configuration Properties
+## Quick Reference: Configuration Properties
 
 ```yaml
 spring:
@@ -1006,7 +999,7 @@ spring:
 
 ---
 
-## QUICK REFERENCE: Dependency Additions to pom.xml
+## Quick Reference: Dependency Additions to pom.xml
 
 ```xml
 <!-- For the resubmission API (FailedEventPublications, CompletedEventPublications, etc.) -->
@@ -1016,7 +1009,7 @@ spring:
     <version>2.0.7</version>
 </dependency>
 
-<!-- For Kafka externalization (add instead of the above if externalizing to Kafka) -->
+<!-- For Kafka externalization (add alongside spring-modulith-events-api, not instead of it) -->
 <dependency>
     <groupId>org.springframework.modulith</groupId>
     <artifactId>spring-modulith-events-kafka</artifactId>
@@ -1030,4 +1023,3 @@ spring:
     <version>2.0.7</version>
 </dependency>
 ```
-
